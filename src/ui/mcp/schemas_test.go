@@ -55,6 +55,7 @@ func TestSchemas(t *testing.T) {
 		{"send poll ok", sendSchema, `{"type":"poll","phone":"628","question":"q","options":["a","b"]}`, false},
 		{"send poll one option", sendSchema, `{"type":"poll","phone":"628","question":"q","options":["a"]}`, true},
 		{"send link ok", sendSchema, `{"type":"link","phone":"628","link":"http://x","caption":"c"}`, false},
+		{"send link with custom preview image", sendSchema, `{"type":"link","phone":"628","link":"http://x","caption":"c","link_preview_image":"aGVsbG8="}`, false},
 		{"send link missing caption", sendSchema, `{"type":"link","phone":"628","link":"http://x"}`, true},
 		{"send forward ok", sendSchema, `{"type":"forward","phone":"628","message_id":"M1"}`, false},
 		{"send forward missing id", sendSchema, `{"type":"forward","phone":"628"}`, true},

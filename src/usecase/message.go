@@ -510,7 +510,7 @@ func (service serviceMessage) UpdateMessage(ctx context.Context, request domainM
 		if !containsLinkToken(text, link) {
 			text = buildLinkMessageText(text, link)
 		}
-		msg, err = buildLinkPreviewMessage(ctx, client, dataWaRecipient, text, link)
+		msg, err = buildLinkPreviewMessage(ctx, client, dataWaRecipient, text, link, "")
 		if err != nil {
 			return response, err
 		}

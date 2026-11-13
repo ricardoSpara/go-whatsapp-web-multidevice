@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -92,6 +93,12 @@ const (
 	linkPreviewMaxJPEGDimension  = 400
 	linkPreviewImageQuality      = 85
 	linkPreviewJPEGQuality       = 80
+	// LinkPreviewImageMaxBytes caps decoded caller-supplied preview images.
+	LinkPreviewImageMaxBytes = 10 * 1024 * 1024
+	// LinkPreviewImageMaxEncodedBytes bounds the JSON field before base64 decode.
+	LinkPreviewImageMaxEncodedBytes = 14 * 1024 * 1024
+	// LinkPreviewImageMaxDimension matches the WuzAPI custom-preview limit.
+	LinkPreviewImageMaxDimension = 4000
 	// MaxPreviewHTMLBytes caps the decompressed preview document; only that
 	// prefix is parsed. Go's HTTP client gunzips before Body is read, so this
 	// limit applies to the decoded stream.
@@ -142,6 +149,53 @@ func buildLinkPreviewThumbnails(src image.Image) (imageThumb []byte, jpegThumb [
 	}
 
 	return imageThumb, jpegThumb, width, height, nil
+}
+
+// BuildLinkPreviewThumbnailsFromBase64 accepts bare base64 image data or a
+// data:image/...;base64 URI and returns the two JPEG previews used by WhatsApp.
+func BuildLinkPreviewThumbnailsFromBase64(source string) (imageThumb []byte, jpegThumb []byte, width uint32, height uint32, err error) {
+	source = strings.TrimSpace(source)
+	if source == "" {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image must contain base64 image data")
+	}
+	if len(source) > LinkPreviewImageMaxEncodedBytes {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image exceeds the maximum encoded size")
+	}
+
+	encodedImage := source
+	if strings.HasPrefix(strings.ToLower(source), "data:") {
+		header, payload, found := strings.Cut(source, ",")
+		normalizedHeader := strings.ToLower(header)
+		if !found || !strings.HasPrefix(normalizedHeader, "data:image/") || !strings.HasSuffix(normalizedHeader, ";base64") {
+			return nil, nil, 0, 0, fmt.Errorf("link_preview_image must be bare base64 or a data:image/...;base64 URI")
+		}
+		encodedImage = payload
+	}
+	if encodedImage == "" || base64.StdEncoding.DecodedLen(len(encodedImage)) > LinkPreviewImageMaxBytes+2 {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image exceeds %d MiB", LinkPreviewImageMaxBytes/(1024*1024))
+	}
+
+	imageData, err := base64.StdEncoding.DecodeString(encodedImage)
+	if err != nil {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image must be valid base64 image data: %w", err)
+	}
+	if len(imageData) > LinkPreviewImageMaxBytes {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image exceeds %d MiB", LinkPreviewImageMaxBytes/(1024*1024))
+	}
+
+	imageConfig, _, err := image.DecodeConfig(bytes.NewReader(imageData))
+	if err != nil {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image is not a supported image: %w", err)
+	}
+	if imageConfig.Width > LinkPreviewImageMaxDimension || imageConfig.Height > LinkPreviewImageMaxDimension {
+		return nil, nil, 0, 0, fmt.Errorf("link_preview_image exceeds %d px on a side", LinkPreviewImageMaxDimension)
+	}
+
+	img, _, err := DecodeImageWithinBudget(bytes.NewReader(imageData))
+	if err != nil {
+		return nil, nil, 0, 0, fmt.Errorf("could not decode link_preview_image: %w", err)
+	}
+	return buildLinkPreviewThumbnails(img)
 }
 
 // newBrowserRequest creates an HTTP request with browser-like headers

@@ -1894,6 +1894,9 @@ paths:
                   type: string
                   example: 'Halo ini contoh caption'
                   description: Caption to send
+                link_preview_image:
+                  type: string
+                  description: Optional base64 image or data:image/...;base64 URI that overrides the page Open Graph image. Maximum 10 MiB decoded and 4000 pixels on either side.
                 is_forwarded:
                   type: boolean
                   example: false

@@ -35,6 +35,7 @@ const sendSchema = `{
     "options": {"type": "array", "items": {"type": "string"}, "minItems": 2, "description": "type=poll: poll options (min 2)"},
     "max_answer": {"type": "integer", "minimum": 1, "description": "type=poll: max selectable options, at most the number of options (default 1)"},
     "link": {"type": "string", "description": "type=link: the URL to send"},
+    "link_preview_image": {"type": "string", "description": "type=link: optional base64 image or data:image/...;base64 URI to use instead of the page's Open Graph image (10 MiB decoded, 4000px max edge)"},
     "message_id": {"type": "string", "description": "type=forward: source message ID from chat storage"},
     "duration": {"type": "integer", "enum": [0, 86400, 604800, 7776000], "description": "type=forward: disappearing duration seconds (0, 86400, 604800, 7776000)"},
     "force_reupload": {"type": "boolean", "description": "type=forward: re-upload media instead of reusing references (default false)"},

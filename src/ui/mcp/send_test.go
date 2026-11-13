@@ -239,10 +239,11 @@ func TestHandleSendDispatch(t *testing.T) {
 		svc := &stubSendService{}
 		h := InitMcpSend(svc, &stubResolver{})
 		_, err := h.handleSend(deviceCtx(), callReq(map[string]any{
-			"type": "link", "phone": "628", "link": "http://x", "caption": "c",
+			"type": "link", "phone": "628", "link": "http://x", "caption": "c", "link_preview_image": "aGVsbG8=",
 		}))
 		require.NoError(t, err)
 		require.NotNil(t, svc.lastLink)
+		assert.Equal(t, "aGVsbG8=", svc.lastLink.LinkPreviewImage)
 	})
 
 	t.Run("forward with duration", func(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/config"
 	domainSend "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/send"
 	pkgError "github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/error"
+	"github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/utils"
 	"github.com/dustin/go-humanize"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -352,6 +353,10 @@ func ValidateSendContact(ctx context.Context, request domainSend.ContactRequest)
 }
 
 func ValidateSendLink(ctx context.Context, request domainSend.LinkRequest) error {
+	if len(request.LinkPreviewImage) > utils.LinkPreviewImageMaxEncodedBytes {
+		return pkgError.ValidationError("link_preview_image exceeds the maximum encoded size")
+	}
+
 	err := validation.ValidateStructWithContext(ctx, &request,
 		validation.Field(&request.Phone, validation.Required),
 		validation.Field(&request.Link, validation.Required, is.URL),

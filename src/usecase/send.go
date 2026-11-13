@@ -1263,7 +1263,7 @@ func (service serviceSend) SendLink(ctx context.Context, request domainSend.Link
 
 	messageText := buildLinkMessageText(request.Caption, request.Link)
 
-	msg, err := buildLinkPreviewMessage(ctx, client, dataWaRecipient, messageText, request.Link)
+	msg, err := buildLinkPreviewMessage(ctx, client, dataWaRecipient, messageText, request.Link, request.LinkPreviewImage)
 	if err != nil {
 		return response, err
 	}
@@ -1292,12 +1292,38 @@ func (service serviceSend) SendLink(ctx context.Context, request domainSend.Link
 	return response, nil
 }
 
+func applyCustomLinkPreviewImage(metadata *utils.Metadata, source string) error {
+	imageThumb, jpegThumb, width, height, err := utils.BuildLinkPreviewThumbnailsFromBase64(source)
+	if err != nil {
+		return err
+	}
+	metadata.ImageThumb = imageThumb
+	metadata.JPEGThumb = jpegThumb
+	metadata.Width = &width
+	metadata.Height = &height
+	return nil
+}
+
 // buildLinkPreviewMessage builds an ExtendedTextMessage carrying a rich preview for link.
 // It is shared by SendLink and link-aware message edits.
-func buildLinkPreviewMessage(ctx context.Context, client *whatsmeow.Client, recipient types.JID, text, link string) (*waE2E.Message, error) {
+func buildLinkPreviewMessage(ctx context.Context, client *whatsmeow.Client, recipient types.JID, text, link, customPreviewImage string) (*waE2E.Message, error) {
+	var customPreview *utils.Metadata
+	if customPreviewImage != "" {
+		customPreview = &utils.Metadata{}
+		if err := applyCustomLinkPreviewImage(customPreview, customPreviewImage); err != nil {
+			return nil, pkgError.ValidationError(err.Error())
+		}
+	}
+
 	metadata, err := utils.GetMetaDataFromURL(link)
 	if err != nil {
 		return nil, err
+	}
+	if customPreview != nil {
+		metadata.ImageThumb = customPreview.ImageThumb
+		metadata.JPEGThumb = customPreview.JPEGThumb
+		metadata.Width = customPreview.Width
+		metadata.Height = customPreview.Height
 	}
 
 	if metadata.Width != nil && metadata.Height != nil {

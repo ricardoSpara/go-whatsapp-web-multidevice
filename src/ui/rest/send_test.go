@@ -29,6 +29,18 @@ func (s *sendFileStubUsecase) SendFile(_ context.Context, request domainSend.Fil
 	return domainSend.GenericResponse{Status: "ok"}, nil
 }
 
+type sendLinkStubUsecase struct {
+	domainSend.ISendUsecase
+	receivedRequest domainSend.LinkRequest
+	called          bool
+}
+
+func (s *sendLinkStubUsecase) SendLink(_ context.Context, request domainSend.LinkRequest) (domainSend.GenericResponse, error) {
+	s.called = true
+	s.receivedRequest = request
+	return domainSend.GenericResponse{Status: "ok"}, nil
+}
+
 func newSendFileTestApp(stub *sendFileStubUsecase) *fiber.App {
 	app := fiber.New()
 	app.Use(middleware.Recovery())
@@ -65,6 +77,32 @@ func TestSendFileJSONBodyWithFileURLDoesNotPanic(t *testing.T) {
 	}
 	if stub.receivedRequest.File != nil {
 		t.Fatalf("File = %+v, want nil since no multipart file part was sent", stub.receivedRequest.File)
+	}
+}
+
+func TestSendLinkJSONBodyBindsCustomPreviewImage(t *testing.T) {
+	stub := &sendLinkStubUsecase{}
+	app := fiber.New()
+	app.Use(middleware.Recovery())
+	controller := Send{Service: stub}
+	app.Post("/send/link", controller.SendLink)
+
+	body := `{"phone":"5511999999999","link":"https://example.com","caption":"Confira","link_preview_image":"aGVsbG8="}`
+	req := httptest.NewRequest(http.MethodPost, "/send/link", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, fiber.StatusOK)
+	}
+	if !stub.called {
+		t.Fatal("usecase SendLink was not called")
+	}
+	if got := stub.receivedRequest.LinkPreviewImage; got != "aGVsbG8=" {
+		t.Fatalf("LinkPreviewImage = %q, want the JSON field value", got)
 	}
 }
 

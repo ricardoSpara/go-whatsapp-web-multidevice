@@ -133,9 +133,10 @@ func (s *SendHandler) handleSend(ctx context.Context, request mcpg.CallToolReque
 		})
 	case "link":
 		res, err = s.sendService.SendLink(ctx, domainSend.LinkRequest{
-			BaseRequest: base,
-			Link:        request.GetString("link", ""),
-			Caption:     request.GetString("caption", ""),
+			BaseRequest:      base,
+			Link:             request.GetString("link", ""),
+			Caption:          request.GetString("caption", ""),
+			LinkPreviewImage: request.GetString("link_preview_image", ""),
 		})
 	case "forward":
 		forwardReq := domainSend.ForwardRequest{
