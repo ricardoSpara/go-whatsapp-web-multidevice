@@ -10,6 +10,17 @@ Use the optional `link_preview_image` field with either bare Base64 or a
 images return HTTP 400 and the message is not sent. When the field is omitted,
 GOWA keeps using the page's Open Graph image.
 
+## Run the fork locally
+
+Use a test WhatsApp number. From a second terminal, clone the feature branch,
+start GOWA on loopback, and pair that test number through the local UI.
+
+```sh
+git clone --branch codex/link-preview-image-base64 https://github.com/ricardoSpara/go-whatsapp-web-multidevice.git
+cd go-whatsapp-web-multidevice/src
+APP_HOST=127.0.0.1 APP_BASIC_AUTH='teste:troque-esta-senha' go run . rest
+```
+
 ## Try it with REST
 
 Replace the sample phone, link, caption, and image path. `APP_BASIC_AUTH` must
@@ -18,7 +29,7 @@ be configured on the GOWA server.
 ```sh
 base64 -i banner.png | tr -d '\n' > /tmp/banner.base64
 jq -n --rawfile image /tmp/banner.base64 '{phone:"5511999999999",link:"https://example.com",caption:"Confira este link",link_preview_image:$image}' \
-  | curl -u "$GOWA_USER:$GOWA_PASS" -H 'Content-Type: application/json' \
+  | curl -u 'teste:troque-esta-senha' -H 'Content-Type: application/json' \
       --data-binary @- http://localhost:3000/send/link
 ```
 
